@@ -13,7 +13,7 @@
     "test": "tsx --test test/**/*.test.ts",
     "typecheck": "tsc --noEmit",
     "build": "tsc",
-    "dist:win": "pnpm build && electron-builder --win nsis",
+    "dist:win": "pnpm build && electron-builder --win nsis --publish never",
     "release": "pnpm dist:win"
   },
   "dependencies": {
