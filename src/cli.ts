@@ -1,0 +1,11 @@
+import { DeviceManager } from "./core/device-manager.js";
+import { loadConfig, saveConfig } from "./core/config.js";
+import { Logger } from "./core/logger.js";
+import { QW2100Adapter } from "./devices/barcode-scanner/qw2100-adapter.js";
+import { DeviceGateway } from "./gateway/device-gateway.js";
+const config = loadConfig(); saveConfig(config); const logger = new Logger();
+const gateway = new DeviceGateway(config, "0.1.0", async () => process.env.KONTAVE_ALLOW_HEADLESS_PAIRING === "true");
+const manager = new DeviceManager(new QW2100Adapter(config), gateway, logger);
+manager.onChange((state) => process.stdout.write(`${JSON.stringify(state)}\n`));
+await manager.start();
+const shutdown = async () => { await manager.stop(); process.exit(0); }; process.on("SIGINT", () => void shutdown()); process.on("SIGTERM", () => void shutdown());

@@ -1,0 +1,42 @@
+{
+  "name": "kontave-devices-manager",
+  "version": "0.1.0",
+  "description": "Administrador local seguro de dispositivos para Kontave",
+  "author": "Kontave",
+  "type": "module",
+  "main": "dist/desktop/main.js",
+  "private": true,
+  "scripts": {
+    "dev": "tsx src/cli.ts",
+    "desktop:dev": "pnpm build && electron .",
+    "ports": "tsx src/tools/list-ports.ts",
+    "test": "tsx --test test/**/*.test.ts",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc",
+    "dist:win": "pnpm build && electron-builder --win nsis",
+    "release": "pnpm build && electron-builder --win nsis --publish always --config.publish.provider=github --config.publish.owner=%GH_OWNER% --config.publish.repo=%GH_REPO%"
+  },
+  "dependencies": {
+    "electron-updater": "^6.6.2",
+    "serialport": "^13.0.0",
+    "ws": "^8.18.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/ws": "^8.18.1",
+    "electron": "^37.0.0",
+    "electron-builder": "^26.0.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.0"
+  },
+  "build": {
+    "appId": "com.kontave.devices",
+    "productName": "Kontave Device Manager",
+    "asar": true,
+    "files": ["dist/**/*", "package.json"],
+    "extraResources": [{ "from": "assets", "to": "assets" }],
+    "directories": { "output": "release" },
+    "win": { "target": ["nsis"], "artifactName": "Kontave-Device-Manager-Setup.${ext}" },
+    "nsis": { "oneClick": false, "perMachine": false, "allowToChangeInstallationDirectory": true, "createDesktopShortcut": true, "createStartMenuShortcut": true, "deleteAppDataOnUninstall": false }
+  }
+}
