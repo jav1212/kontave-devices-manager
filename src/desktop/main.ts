@@ -1,5 +1,5 @@
 import { app, BrowserWindow, dialog, Menu, nativeImage, shell, Tray } from "electron";
-import { autoUpdater } from "electron-updater";
+import updater from "electron-updater";
 import { spawn } from "node:child_process";
 import { join } from "node:path";
 import { DeviceManager, type ManagerSnapshot } from "../core/device-manager.js";
@@ -10,6 +10,7 @@ import { DeviceGateway } from "../gateway/device-gateway.js";
 
 let tray: Tray | null = null; let window: BrowserWindow | null = null; let manager: DeviceManager | null = null; let quitting = false;
 const logger = new Logger();
+const { autoUpdater } = updater;
 const icon = nativeImage.createFromDataURL("data:image/svg+xml;base64," + Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"><rect width="32" height="32" rx="8" fill="#2563eb"/><path d="M8 9h2v14H8zm4 0h1v14h-1zm3 0h3v14h-3zm5 0h1v14h-1zm3 0h2v14h-2z" fill="white"/></svg>').toString("base64"));
 
 function diagnosticsHtml(state: ManagerSnapshot): string {

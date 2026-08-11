@@ -1,6 +1,6 @@
 {
   "name": "kontave-devices-manager",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Administrador local seguro de dispositivos para Kontave",
   "author": "Kontave",
   "type": "module",
