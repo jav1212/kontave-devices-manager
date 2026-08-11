@@ -1,6 +1,6 @@
 {
   "name": "kontave-devices-manager",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Administrador local seguro de dispositivos para Kontave",
   "author": "Kontave",
   "type": "module",
@@ -14,7 +14,7 @@
     "typecheck": "tsc --noEmit",
     "build": "tsc",
     "dist:win": "pnpm build && electron-builder --win nsis",
-    "release": "pnpm build && electron-builder --win nsis --publish always --config.publish.provider=github --config.publish.owner=%GH_OWNER% --config.publish.repo=%GH_REPO%"
+    "release": "pnpm dist:win"
   },
   "dependencies": {
     "electron-updater": "^6.6.2",
@@ -37,6 +37,7 @@
     "extraResources": [{ "from": "assets", "to": "assets" }],
     "directories": { "output": "release" },
     "win": { "target": ["nsis"], "artifactName": "Kontave-Device-Manager-Setup.${ext}" },
-    "nsis": { "oneClick": false, "perMachine": false, "allowToChangeInstallationDirectory": true, "createDesktopShortcut": true, "createStartMenuShortcut": true, "deleteAppDataOnUninstall": false }
+    "nsis": { "oneClick": false, "perMachine": false, "allowToChangeInstallationDirectory": true, "createDesktopShortcut": true, "createStartMenuShortcut": true, "deleteAppDataOnUninstall": false },
+    "publish": [{ "provider": "github", "owner": "jav1212", "repo": "kontave-devices-manager" }]
   }
 }

@@ -19,11 +19,12 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm test
       - run: pnpm typecheck
-      - name: Compilar, firmar y publicar
+      - name: Compilar instalador
         run: pnpm release
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_OWNER: ${{ github.repository_owner }}
-          GH_REPO: ${{ github.event.repository.name }}
           CSC_LINK: ${{ secrets.WINDOWS_CERTIFICATE }}
           CSC_KEY_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+      - name: Publicar release
+        run: gh release create "${{ github.ref_name }}" "release/Kontave-Device-Manager-Setup.exe" "release/Kontave-Device-Manager-Setup.exe.blockmap" "release/latest.yml" --title "Kontave Device Manager ${{ github.ref_name }}" --generate-notes --latest
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

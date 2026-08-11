@@ -34,11 +34,10 @@ function updateTray(state: ManagerSnapshot): void {
   if (window?.isVisible()) showWindow(state);
 }
 
-async function ensureTls(): Promise<void> {
+async function ensureTls(owner: BrowserWindow): Promise<void> {
   const current = loadConfig();
   if (current.tlsPfxPath) return;
-  const consent = await dialog.showMessageBox({ type: "question", buttons: ["Ahora no", "Configurar"], defaultId: 1, cancelId: 0, title: "Conexión local segura", message: "Kontave necesita autorizar una conexión segura con este equipo.", detail: "Windows solicitará confirmar un certificado local válido únicamente para localhost. No concede acceso desde Internet." });
-  if (consent.response !== 1) return;
+  await dialog.showMessageBox(owner, { type: "info", buttons: ["Configurar conexión segura"], defaultId: 0, title: "Configuración inicial", message: "Kontave necesita autorizar una conexión segura con este equipo.", detail: "A continuación Windows solicitará confirmar un certificado válido únicamente para localhost. No concede acceso desde Internet." });
   const script = app.isPackaged ? join(process.resourcesPath, "assets", "setup-local-tls.ps1") : join(app.getAppPath(), "assets", "setup-local-tls.ps1");
   await new Promise<void>((resolve, reject) => {
     const child = spawn("powershell.exe", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", script, "-ConfigPath", configPath], { windowsHide: true, stdio: "ignore" });
@@ -50,7 +49,9 @@ app.requestSingleInstanceLock() || app.quit();
 app.on("second-instance", () => showWindow()); app.on("window-all-closed", () => undefined); app.on("before-quit", (event) => { if (!quitting) { event.preventDefault(); return; } });
 await app.whenReady();
 app.setLoginItemSettings({ openAtLogin: true, args: ["--hidden"] }); tray = new Tray(icon); tray.on("double-click", () => showWindow());
-try { await ensureTls(); } catch (error) { logger.error("No se pudo configurar TLS", String(error)); void dialog.showErrorBox("Conexión segura", "No fue posible configurar el certificado local. Puedes reintentarlo reinstalando o revisar los registros."); }
+const initialState: ManagerSnapshot = { status: "connecting", device: null, lastError: "Completando la configuración inicial…", gatewayUrl: null };
+if (!process.argv.includes("--hidden") || !loadConfig().tlsPfxPath) showWindow(initialState);
+try { await ensureTls(window!); } catch (error) { logger.error("No se pudo configurar TLS", String(error)); void dialog.showErrorBox("Conexión segura", "No fue posible configurar el certificado local. Cierra la aplicación desde la bandeja y vuelve a abrirla para reintentar."); }
 const config = loadConfig(); saveConfig(config);
 const gateway = new DeviceGateway(config, app.getVersion(), async ({ clientName, origin }) => (await dialog.showMessageBox({ type: "question", buttons: ["Rechazar", "Permitir"], defaultId: 1, cancelId: 0, title: "Emparejar con Kontave", message: `${clientName} solicita acceso a los dispositivos`, detail: `Origen: ${origin}\n\nPermite únicamente si tú abriste Kontave en este equipo.` })).response === 1);
 manager = new DeviceManager(new QW2100Adapter(config), gateway, logger); manager.onChange(updateTray);
