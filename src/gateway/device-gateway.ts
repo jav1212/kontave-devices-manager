@@ -10,6 +10,7 @@ export interface PairingRequest { clientName: string; origin: string }
 export class DeviceGateway {
   private server: HttpServer | HttpsServer | null = null; private sockets: WebSocketServer | null = null; private authenticated = new WeakSet<WebSocket>();
   private latestStatus: ManagerEvent = { type: "device.status", device: null, status: "disconnected" };
+  private pendingErrors: Extract<ManagerEvent, { type: "manager.error" }>[] = [];
   constructor(private readonly config: ManagerConfig, private readonly version: string, private readonly approve: (request: PairingRequest) => Promise<boolean>) {}
   async start(): Promise<string> {
     const secure = Boolean(this.config.tlsPfxPath);
@@ -19,13 +20,18 @@ export class DeviceGateway {
       const origin = request.headers.origin ?? ""; const token = new URL(request.url ?? "/", "http://localhost").searchParams.get("token"); const paired = this.verify(token);
       if (paired) this.authenticated.add(socket);
       this.send(socket, { type: "manager.hello", protocolVersion: PROTOCOL_VERSION, managerVersion: this.version, paired });
-      if (paired) this.send(socket, this.latestStatus);
+      if (paired) { this.send(socket, this.latestStatus); this.flushErrors(socket); }
       socket.on("message", (raw) => void this.onMessage(socket, origin, raw.toString()));
     });
     await new Promise<void>((resolve, reject) => { this.server!.once("error", reject); this.server!.listen(this.config.websocketPort, "127.0.0.1", resolve); });
     return `${secure ? "wss" : "ws"}://localhost:${this.config.websocketPort}`;
   }
-  broadcast(event: ManagerEvent): void { if (event.type === "device.status") this.latestStatus = event; this.sockets?.clients.forEach((socket) => { if (socket.readyState === WebSocket.OPEN && this.authenticated.has(socket)) this.send(socket, event); }); }
+  broadcast(event: ManagerEvent): void {
+    if (event.type === "device.status") this.latestStatus = event;
+    let delivered = false;
+    this.sockets?.clients.forEach((socket) => { if (socket.readyState === WebSocket.OPEN && this.authenticated.has(socket)) { this.send(socket, event); delivered = true; } });
+    if (event.type === "manager.error" && !delivered) this.pendingErrors = [...this.pendingErrors.slice(-49), event];
+  }
   async stop(): Promise<void> { this.sockets?.clients.forEach((socket) => socket.close(1001, "Manager stopping")); await new Promise<void>((resolve) => this.sockets?.close(() => resolve()) ?? resolve()); await new Promise<void>((resolve) => this.server?.close(() => resolve()) ?? resolve()); }
   private async onMessage(socket: WebSocket, origin: string, raw: string): Promise<void> {
     try {
@@ -35,10 +41,11 @@ export class DeviceGateway {
       const approved = await this.approve({ clientName: message.clientName, origin });
       if (!approved) return this.send(socket, { type: "pairing.result", approved: false, message: "Solicitud rechazada" });
       const token = `${randomUUID()}.${randomBytes(24).toString("base64url")}`; this.config.pairingTokenHash = this.hash(token); saveConfig(this.config); this.authenticated.add(socket);
-      this.send(socket, { type: "pairing.result", approved: true, token }); this.send(socket, this.latestStatus);
+      this.send(socket, { type: "pairing.result", approved: true, token }); this.send(socket, this.latestStatus); this.flushErrors(socket);
     } catch { socket.close(1003, "Invalid JSON"); }
   }
   private verify(token: string | null): boolean { if (!token || !this.config.pairingTokenHash) return false; const a = Buffer.from(this.hash(token)); const b = Buffer.from(this.config.pairingTokenHash); return a.length === b.length && timingSafeEqual(a, b); }
   private hash(token: string): string { return createHash("sha256").update(token).digest("hex"); }
+  private flushErrors(socket: WebSocket): void { const errors = this.pendingErrors; this.pendingErrors = []; errors.forEach((event) => this.send(socket, event)); }
   private send(socket: WebSocket, event: ManagerEvent): void { socket.send(JSON.stringify(event)); }
 }

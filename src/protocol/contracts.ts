@@ -16,7 +16,7 @@ export type ManagerEvent =
   | { type: "device.status"; device: DeviceInfo | null; status: DeviceStatus; message?: string }
   | { type: "barcode.scanned"; eventId: string; device: DeviceInfo; barcode: string; symbology?: string; occurredAt: string }
   | { type: "pairing.result"; approved: boolean; token?: string; message?: string }
-  | { type: "manager.error"; code: string; message: string };
+  | { type: "manager.error"; code: string; message: string; eventId?: string; occurredAt?: string; managerVersion?: string; installId?: string };
 
 export type ClientMessage =
   | { type: "client.hello"; protocolVersion: number }
