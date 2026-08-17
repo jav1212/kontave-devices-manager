@@ -13,7 +13,12 @@ pnpm typecheck
 pnpm desktop:dev
 ```
 
-Para enumerar puertos seriales: `pnpm ports`. El Datalogic QW2100 debe estar configurado como **USB-COM-STD**, no como teclado USB HID.
+Para enumerar puertos seriales: `pnpm ports`. El Datalogic QW2100 admite dos modos:
+
+- **USB-KBD/HID**: Windows lo trata como teclado y la lectura llega directamente a la ventana de Kontave que esté en primer plano.
+- **USB-COM-STD**: Device Manager abre el puerto serial y entrega la lectura a Kontave mediante el gateway local.
+
+Device Manager detecta ambos modos. En USB-KBD/HID reporta el lector como conectado, pero no intercepta teclas globales ni recibe lecturas destinadas a otra aplicación.
 
 ## Seguridad
 
